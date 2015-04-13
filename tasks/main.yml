@@ -1,0 +1,54 @@
+---
+- name: install java deps
+  apt: pkg={{ item }}
+       update_cache=yes
+  with_items:
+    - wget
+
+- name: install shell profile for java
+  copy: src=profile.java.sh
+        dest="/etc/profile.d/50-java.sh"
+        owner=root group=root mode=0644
+
+- name: install sudoer for java
+  copy: src=java-sudoers
+        dest="/etc/sudoers.d/50-java"
+        owner=root group=root mode=0644
+
+#
+#
+#
+
+- name: ensure cache directory exists
+  file: path="{{ java_source_path }}"
+        owner=root group=root mode=0755
+        state=directory
+  when: java_version is defined
+
+- name: download jdk archive
+  script: download-java.sh "{{ java_source_url }}" "{{ java_source_path }}/{{ java_source_file }}"
+         creates={{ java_source_path }}/{{ java_source_checksum }}
+  when: java_version is defined
+
+- name: ensure java directory exists
+  file: path=/opt/java/
+        owner=root group=root mode=0755
+        state=directory
+  when: java_version is defined
+
+- name: extract java archive
+  script: install-java.sh "{{ java_source_path }}/{{ java_source_file }}"
+         creates=/opt/java/{{ java_version }}
+  when: java_version is defined
+
+- name: fix ownership
+  file: path=/opt/java/{{ java_version }}
+        state=directory
+        owner=root group=root recurse=yes
+  when: java_version is defined
+
+- name: create symlink
+  file: src=/opt/java/{{ java_version }}
+        dest=/opt/java/home
+        state=link
+  when: java_version is defined

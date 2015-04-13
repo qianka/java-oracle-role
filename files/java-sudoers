@@ -1,0 +1,2 @@
+Defaults env_keep += "JDK_HOME PATH"
+Defaults !secure_path
